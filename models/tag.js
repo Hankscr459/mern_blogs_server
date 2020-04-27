@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const categorySchema = new mongoose.Schema(
+const tagSchema = new mongoose.Schema(
     {
         name: {
             type: String,
@@ -11,11 +11,10 @@ const categorySchema = new mongoose.Schema(
         slug: {
             type: String,
             unique: true,
-            index: true // Indexes support the efficient execution of queries in MongoDB. 
-                        // Without indexes, MongoDB must perform a collection scan
+            index: true
         }
     },
     { timestamps: true }
 )
 
-module.exports = mongoose.model('Category', categorySchema)
+module.exports = mongoose.model('Tag', tagSchema)
