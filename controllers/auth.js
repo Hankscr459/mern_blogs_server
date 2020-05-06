@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const expressJwt = require('express-jwt')
 const { errorHandler } = require('../helpers/dbErrorHandler')
 const { OAuth2Client } = require('google-auth-library')
+const fetch = require('node-fetch')
 const _ = require('lodash')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
@@ -300,4 +301,53 @@ exports.googleLogin = (req, res) => {
             })
         }
     })
+}
+
+exports.facebookLogin = (req, res) => {
+    console.log('FACEBOOK LOGIN REQ BODY', req.body);
+    const { userID, accessToken } = req.body;
+
+    const url = `https://graph.facebook.com/v2.11/${userID}/?fields=id,name,email&access_token=${accessToken}`;
+
+    return (
+        fetch(url, {
+            method: 'GET'
+        })
+            .then(response => response.json())
+            .then(response => {
+                const { email, name } = response
+                User.findOne({ email }).exec((err, user) => {
+                    if (user) {
+                        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' })
+                        const {_id, email, name, role, username} = user
+                        return res.json({
+                            token,
+                            user: {_id, email, name, role, username}
+                        })
+                    } else {
+                        let username = shortId.generate()
+                        let profile = `${process.env.CLIENT_URL}/profile/${username}`
+                        let password = email + process.env.JWT_SECRET
+                        user = new User({ name, email, profile, username, password})
+                        user.save((err, data) => {
+                            if (err) {
+                                console.log('ERROR FACEBOOK LOGIN ON USER SAVE', err)
+                                return res.status(400).json({
+                                    error: 'User signup failed with facebook'
+                                })
+                            }
+                            const token = jwt.sign({ _id: data._id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+                            const { _id, email, name, role, username } = user
+                            res.cookie('token', token, { expiresIn: '1d' })
+                            return res.json({ token, user: { _id, email, name, role, username } })
+                        })
+                    }
+                })
+            })
+            .catch(error => {
+                res.json({
+                    error: 'Facebook login failed. Try later'
+                })
+            })
+    )
 }
