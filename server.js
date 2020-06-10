@@ -31,9 +31,7 @@ app.use(morgan('dev'))
 app.use(bodyParser.json({limit: '10mb', extended: true}))
 app.use(cookieParser())
 // cors
-if (process.env.NODE_ENV === 'development') {
-    app.use(cors({ origin: `${process.env.CLIENT_URL}` }));
-}
+app.use(cors())
 
 // routes middleware
 app.use('/api', blogRoutes)
