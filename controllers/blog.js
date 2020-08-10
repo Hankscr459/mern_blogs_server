@@ -187,6 +187,21 @@ exports.remove = (req, res) => {
     })
 }
 
+exports.selectRemove = (req, res) => {
+    const slug = req.params.slug.toLowerCase().split(",")
+    console.log(slug)
+    Blog.deleteMany({slug: {$in: slug}}).exec((err, data) => {
+        if(err) {
+            return res.json({
+                error: errorHandler(err)
+            })
+        }
+        res.json({
+            message: 'Blog deleted successfully.'
+        })
+    })
+}
+
 exports.update = (req, res) => {
     const slug = req.params.slug.toLowerCase()
     Blog.findOne({slug}).exec((err, oldBlog) => {
